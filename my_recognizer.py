@@ -23,7 +23,6 @@ def recognize(models: dict, test_set: SinglesData):
 
     # PROBABILITIES
     for i in range(len(test_set.wordlist)):
-      # print('{}th word in wordlist'.format(i))
       sample_frames , sample_length = test_set._hmm_data[i][0], test_set._hmm_data[i][1]
       sample_dict = {}
       # scoring for every model
@@ -31,27 +30,19 @@ def recognize(models: dict, test_set: SinglesData):
         try:
           score = models[word].score(sample_frames, sample_length)
           sample_dict[word] = models[word].score(sample_frames, sample_length)
-          # print('Score for word {} is {}'.format(word, score))
         except:
-          sample_dict[word] = float('-inf') # if None is not comparable, set to float('-inf')
-          # print('Model for word {} did not score for test_id {}, which is word {}'.format(word, i, test_set.wordlist[i]))
+          sample_dict[word] = float('-inf')
       probabilities.append(sample_dict)
-    # probabilities now has length=len(test_set.wordlist) and each element is a dict with every word in models
 
     # GUESSES
     for sample in probabilities:
       biggest_prob = float('-inf')
       best_guess = ''
       for word, prob in sample.items():
-        # print(word, prob)
         if prob > biggest_prob:
-          # print('Prob {} for word {} is higher than {}. {} is not guess'.format(prob, word, biggest_prob, word))
           biggest_prob = prob
           best_guess = word
-      # print('Final guess: {}'.format(best_guess))
       guesses.append(best_guess)
-      # guesses now has length=len(test_set.wordlist)=len(probabilities)
-    # print(guesses)
     return probabilities, guesses
 
 

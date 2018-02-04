@@ -9,6 +9,14 @@ from asl_utils import combine_sequences
 
 
 class TrainingDataCV(object):
+    """
+    Object for storing data from training using SelectorCV
+
+    Attributes:
+    self.hmmsize_cv : list, cross_val mean values for every number of states
+    self.best_hmm : int, best number of states
+    self.highest_mean : float, cross_val mean associated with beat_hmm
+    """
     def __init__(self, hmmsize_cv):
         self.hmmsize_cv = hmmsize_cv
         highest_mean, best_hmm = float('-inf'), 0
@@ -23,6 +31,14 @@ class TrainingDataCV(object):
         return self.best_hmm
 
 class TrainingDataBIC(object):
+        """
+    Object for storing data from training using SelectorCV
+
+    Attributes:
+    self.hmmsize_cv : list, bic values for every number of states
+    self.best_hmm : int, best number of states
+    self.lowesT_bic : float, bic value associated with beat_hmm
+    """
     def __init__(self, hmmsize_bic):
         self.hmmsize_bic = hmmsize_bic
         lowest_bic, best_hmm = float('inf'), 0
@@ -40,6 +56,14 @@ class TrainingDataBIC(object):
         return self.lowest_bic
 
 class TrainingDataDIC(object):
+    """
+    Object for storing data from training using SelectorCV
+
+    Attributes:
+    self.hmmsize_dic : list, dic values for every number of states
+    self.best_hmm : int, best number of states
+    self.highest_dic : float, dic value associated with beat_hmm
+    """
     def __init__(self, DIC_values):
         self.hmmsize_dic = DIC_values
         highest_dic, best_hmm = float('-inf'), 0
@@ -160,19 +184,6 @@ class SelectorBIC(ModelSelector):
                 # print('Model {} did not score for own word: {}'.format(hmm_size, self.this_word))
                 pass
 
-        # # searching for best bic value (the lowest one).
-        # lowest_bic, n_components = float('inf'), 0
-        # for hmm_bic in hmmsize_bic:
-        #     if hmm_bic[1] < lowest_bic:
-        #         lowest_bic = hmm_bic[1]
-        #         n_components = int(hmm_bic[0])
-
-        # #print('word: {}. Lowest BIC = {}. Best number of states = {}'.format(self.this_word, lowest_bic, n_components))
-
-        # model = self.base_model(n_components)
-
-        # data = [n_components, lowest_bic, hmmsize_bic]
-
         bic_data = TrainingDataBIC(hmmsize_bic)
         model = self.base_model(bic_data.best_hmm)
 
@@ -217,13 +228,8 @@ class SelectorDIC(ModelSelector):
         """
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        # DIC CALCULATION:
-        # DIC = logL - sum(logL_for_other_words)/(len(self.words)-1)
-
         word_list = self.words.keys()
-
         components_range = range(self.min_n_components, self.max_n_components+1)
-
         DIC_values = []
         models = {}
 
@@ -232,10 +238,8 @@ class SelectorDIC(ModelSelector):
                 models[hmm_size] = self.base_model(hmm_size)
                 this_word_score = models[hmm_size].score(self.X, self.lengths)
             except:
-                # print('Model did not score for own word: {}'.format(self.this_word))
                 models[hmm_size] = None
 
-        # print(models)
         for hmm_size in models:
             other_words_score = []
             if models[hmm_size] is not None:
@@ -244,166 +248,16 @@ class SelectorDIC(ModelSelector):
                         word_X, word_lengths = self.hwords[word]
                         logL = models[hmm_size].score(word_X, word_lengths)
                         other_words_score.append(logL)
-                        # not storing data about which word
                 average_other_words = sum(other_words_score)/float((len(word_list)-1))
                 DIC = this_word_score - average_other_words
                 DIC_values.append([hmm_size, DIC, this_word_score, other_words_score, average_other_words]) 
-                # print('n_components = {}. this_word_score = {}. Other words average: {}. DIC = {}'.format(hmm_size, this_word_score, average_other_words, DIC))                                             
-                # print("other word scores: {}".format(other_words_score))
-                # print('Model could not compute score for own word: {}'.format(self.this_word))
 
         dic_data = TrainingDataDIC(DIC_values)
-
-        # # now we have the values of DIC for every topology
-        # highest_dic = float('-inf')
-        # for dic in DIC_values:
-        #     if dic[1] > highest_dic:
-        #         highest_dic = dic[1]
-        #         best_hmm = dic[0]
-
-        # data = [best_hmm, highest_dic, DIC_values]
 
         if return_data:
             return models[dic_data.best_hmm], dic_data
         else:
             return models[best_hmm]
-
-
-# class SelectorCV(ModelSelector):
-#     ''' select best model based on average log Likelihood of cross-validation folds
-
-#     '''
-
-#     def base_model(self, num_states, X, lengths):
-#         """
-#         Over ride ModelSelector base_model method
-#         """
-#         # with warnings.catch_warnings():
-#         warnings.filterwarnings("ignore", category=DeprecationWarning)
-#         # warnings.filterwarnings("ignore", category=RuntimeWarning)
-#         try:
-#             hmm_model = GaussianHMM(n_components=num_states, covariance_type="diag", n_iter=1000,
-#                                     random_state=self.random_state, verbose=False).fit(X, lengths)
-#             if self.verbose:
-#                 print("model created for {} with {} states".format(self.this_word, num_states))
-#             return hmm_model
-#         except:
-#             if self.verbose:
-#                 print("failure on {} with {} states".format(self.this_word, num_states))
-#             return None
-
-#     def select(self, return_data=False):
-#         """
-#         For each word and number states (hmm_size), this method will compute the logL
-#         value as the average of the cross validation values, and then return the model with 
-#         the highest logL mean value.
-
-#         Return
-#         ______
-#         if return_false:
-#             model : 
-#         else:
-#             model, cv_data: 
-
-#         """
-#         components_range = range(self.min_n_components, self.max_n_components+1)
-#         hmmsize_cv = []
-
-#         non_cross_val = False
-
-#         for hmm_size in components_range:
-#             logL_kfold = []
-
-#             if len(self.lengths) >= 3:
-#                 split_method = KFold(random_state=self.random_state)
-#                 # try:
-
-#                 split = 0
-
-#                 for train_idxs, test_idxs in split_method.split(self.sequences):
-#                     # print('First sequences: {}'.format(self.sequences[0]))
-#                     # retrieving sequences from idxs
-#                     train_sequences = [self.sequences[idx] for idx in train_idxs]
-#                     test_sequences = [self.sequences[idx] for idx in test_idxs]
-#                     # creating lengths again
-#                     train_lengths = [len(sequence) for sequence in train_sequences]
-#                     test_lengths = [len(sequence) for sequence in test_sequences]
-
-#                     # print('Sequences for training: {}. Total number of sequences: {}'.format(len(train_sequences), len(self.sequences)))
-#                     # en_first_sequence = len(train_sequences[0])
-
-#                     # concatenating sequences
-#                     # print('Sequences before conctenation: {}'.format(train_sequences[0]))
-#                     train_sequences = [features for sequence in train_sequences for features in sequence]
-#                     test_sequences = [features for sequence in test_sequences for features in sequence]
-                    
-#                     # print('Sequences after concatenation:{}. First length: {}'.format(train_sequences[:len_first_sequence], train_lengths[0]))  
-#                     # print('Concatenated sequences len should be {} and is {}'.format(sum(train_lengths), len(train_sequences)))
-
-#                     try:
-#                         model = self.base_model(hmm_size, train_sequences, train_lengths)
-#                         # print('Model was created')
-#                         logL  = model.score(test_sequences, test_lengths)
-
-#                         # print('Model did score for size {} and word JOHN and split {}.'.format(hmm_size, split))
-#                         logL_kfold.append(logL)
-                        
-#                     except:
-#                         # print('Model {} for word {} did not score in split {}'.format(hmm_size, self.this_word, split)) 
-#                         pass
-
-#                     split += 1
-#                 if len(logL_kfold) == 3:
-#                     hmmsize_cv.append([hmm_size, np.array(logL_kfold).mean()])
-#                 # else: 
-#                 #     print('No model for word {} and size {}'.format(self.this_word, hmm_size))
-#                 # except:
-#                     # pass
-                
-#             else:
-#                 # print('Not applying cross validaiton for word {}'.format(self.this_word))
-#                 # print('word {} has lass than 3 examples. Cannot split'.format(self.this_word))
-#                 non_cross_val = True
-#                 try:
-#                     model = self.base_model(hmm_size, self.X, self.lengths)
-#                     logL = model.score(self.X, self.lengths)
-#                     hmmsize_cv.append([hmm_size, logL])
-#                 except:
-#                     # print('Model {} for word {} not working'.format(hmm_size, self.this_word))
-#                     pass
-
-#         # if non_cross_val:
-#         #     print('Word {} did not use cross validation'.format(self.this_word))
-          
-#         highest_mean, best_hmm = float('-inf'), 0
-#         # print('there are {} hidden states to be compared'.format(len(hmmsize_cv)))
-#         for hmm_size in hmmsize_cv:
-#             if hmm_size[1] > highest_mean:
-#                 # print('Mean {} is higher than {}, and is now the best state size is {}'.format(hmm_size[1], highest_mean, hmm_size[0]))
-#                 highest_mean = hmm_size[1]
-#                 best_hmm = hmm_size[0]
-#         # print('Highest mean = {}. Best number of states = {}'.format(highest_mean, best_hmm))
-
-#         cv_data = [best_hmm, highest_mean, hmmsize_cv]
-#         model = self.base_model(best_hmm, self.X, self.lengths)
-
-#         # # using data object
-#         # cv_data = TrainingDataCV(hmmsize_cv) 
-#         # model = self.base_model(cv_data.best_hmm, self.X, self.lengths)
-        
-#         if model is not None:
-#             if return_data:
-#                 return model, cv_data
-#             else:
-#                 return model
-
-#         else:
-#             print('No model for word {} was creates'.format(self.this_word))
-#             print('Number of examples for word {}'.format(len(self.sequences)))
-#             if return_data:
-#                 return None, None
-#             else:
-#                 return None
 
 
 class SelectorCV(ModelSelector):
@@ -467,13 +321,9 @@ class SelectorCV(ModelSelector):
 
                     train_sequences = [features for sequence in train_sequences for features in sequence]
                     test_sequences = [features for sequence in test_sequences for features in sequence]
-                    
-                    # print('Sequences after concatenation:{}. First length: {}'.format(train_sequences[:len_first_sequence], train_lengths[0]))  
-                    # print('Concatenated sequences len should be {} and is {}'.format(sum(train_lengths), len(train_sequences)))
 
                     try:
                         model = self.base_model(hmm_size, train_sequences, train_lengths)
-                        # print('Model was created')
                         logL  = model.score(test_sequences, test_lengths)
                         logL_kfold.append(logL)
                         
@@ -493,7 +343,6 @@ class SelectorCV(ModelSelector):
                 except:
                     pass
 
-        # using data object
         cv_data = TrainingDataCV(hmmsize_cv) 
         model = self.base_model(cv_data.best_hmm, self.X, self.lengths)
         
