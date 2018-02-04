@@ -29,7 +29,6 @@ class TestSelectors(TestCase):
     def test_select_cv_interface(self):
         model = SelectorCV(self.sequences, self.xlengths, 'JOHN').select()
         self.assertGreaterEqual(model.n_components, 2)
-        print('Best model for word John: {}'.format(model.n_components))
         model = SelectorCV(self.sequences, self.xlengths, 'CHICKEN').select()
         self.assertGreaterEqual(model.n_components, 2)
 
