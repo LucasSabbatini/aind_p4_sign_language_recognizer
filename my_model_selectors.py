@@ -31,7 +31,7 @@ class TrainingDataCV(object):
         return self.best_hmm
 
 class TrainingDataBIC(object):
-        """
+    """
     Object for storing data from training using SelectorCV
 
     Attributes:
@@ -166,13 +166,13 @@ class SelectorBIC(ModelSelector):
         components_range = range(self.min_n_components, self.max_n_components+1)
         hmmsize_bic = []
 
-        N = len(self.sequences)
+        N, f = self.X.shape
 
         for hmm_size in components_range:
             # calculating p using the equation p = m^2 + km - 1.
             # sourcce: https://rdrr.io/cran/HMMpa/man/AIC_HMM.html
             # considering the underlying distribuition is normal, k = 2
-            p = hmm_size**2 + 2*hmm_size - 1
+            p = hmm_size**2 + 2*hmm_size*f - 1
 
             # creating model
             try:
@@ -332,7 +332,7 @@ class SelectorCV(ModelSelector):
 
                     split += 1
                 if len(logL_kfold) == 3:
-                    hmmsize_cv.append([hmm_size, np.array(logL_kfold).mean()])
+                    hmmsize_cv.append([hmm_size, sum(logL_kfold)/float(len(logL_kfold))])
                 
             else:
                 non_cross_val = True
