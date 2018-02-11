@@ -194,7 +194,7 @@ class SelectorBIC(ModelSelector):
                 return model
 
         else:
-            print('word {} with {} examples has no model'.format(self.this_word, len(self.sequences)))  
+            print('No model was created for word {} with {} examples using BIC selector'.format(self.this_word, len(self.sequences)))  
             return model
 
 
@@ -226,8 +226,6 @@ class SelectorDIC(ModelSelector):
         else:
             (model, data) : 
         """
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
-
         word_list = self.words.keys()
         components_range = range(self.min_n_components, self.max_n_components+1)
         DIC_values = []
@@ -257,7 +255,7 @@ class SelectorDIC(ModelSelector):
         if return_data:
             return models[dic_data.best_hmm], dic_data
         else:
-            return models[best_hmm]
+            return models[dic_data.best_hmm]
 
 
 class SelectorCV(ModelSelector):
@@ -345,7 +343,7 @@ class SelectorCV(ModelSelector):
 
         cv_data = TrainingDataCV(hmmsize_cv) 
         model = self.base_model(cv_data.best_hmm, self.X, self.lengths)
-        
+
         if model is not None:
             if return_data:
                 return model, cv_data
@@ -353,8 +351,8 @@ class SelectorCV(ModelSelector):
                 return model
 
         else:
-            print('No model for word {} was creates'.format(self.this_word))
-            print('Number of examples for word {}'.format(len(self.sequences)))
+
+            print('No model was created for word {} with {} examples using CV selector'.format(self.this_word, len(self.sequences))) 
             if return_data:
                 return None, None
             else:
